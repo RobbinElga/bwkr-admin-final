@@ -101,3 +101,14 @@ export async function createDonationInput(payload: {
     }
     return (body as { data: DonationInput }).data;
 }
+
+export async function deleteDonation(id: number): Promise<void> {
+    let res: Response;
+    try {
+        res = await fetch(`${API}/admin/donations-input/${id}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json", ...authHeaders() },
+        });
+    } catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}

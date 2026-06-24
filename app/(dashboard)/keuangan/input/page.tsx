@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DonationInput, DonationStatus, DonationSource } from "@/types";
-import { getDonationInputs } from "@/services/donation";
 import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatRupiah, formatDate } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { DonationInputFormModal } from "@/components/donation/DonationInputFormModal";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { getDonationInputs, deleteDonation } from "@/services/donation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -23,6 +24,9 @@ const SOURCE: Record<DonationSource, string> = { online: "Online", manual: "Manu
 export default function InputDonasiPage() {
     const router = useRouter();
     const logout = useAdminAuth((s) => s.logout);
+    const isSuper = useAdminAuth((s) => s.user?.role) === "super_admin";
+    const [deleting, setDeleting] = useState<DonationInput | null>(null);
+    const [delLoading, setDelLoading] = useState(false);
 
     const [state, setState] = useState<ViewState>("loading");
     const [rows, setRows] = useState<DonationInput[]>([]);
@@ -48,6 +52,20 @@ export default function InputDonasiPage() {
             setErrMsg(friendlyError(code));
             setState("error");
         }
+    }
+
+    async function confirmDelete() {
+        if (!deleting) return;
+        setDelLoading(true);
+        try {
+            await deleteDonation(deleting.id);
+            setDeleting(null);
+            load();
+        } catch (err) {
+            const code = err instanceof Error ? err.message : "SERVER";
+            if (code === "UNAUTHORIZED") { await logout(); router.replace("/login"); return; }
+            alert(friendlyError(code));
+        } finally { setDelLoading(false); }
     }
 
     useEffect(() => { load(); }, [page, status, source]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -125,6 +143,7 @@ export default function InputDonasiPage() {
                                     <th className="px-5 py-3 font-semibold text-center">Status</th>
                                     <th className="px-5 py-3 font-semibold text-right">Tanggal</th>
                                     <th className="px-5 py-3 font-semibold text-center">Bukti</th>
+                                    {isSuper && <th className="px-5 py-3 font-semibold text-center">Aksi</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-outline-variant/60">
@@ -148,6 +167,14 @@ export default function InputDonasiPage() {
                                                     <Icon name="remove" className="text-[18px] text-outline-variant" />
                                                 )}
                                             </td>
+                                            {isSuper && (
+                                                <td className="px-5 py-3 text-center">
+                                                    <button onClick={() => setDeleting(d)} title="Hapus"
+                                                        className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors">
+                                                        <Icon name="delete" className="text-[18px]" />
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
@@ -174,6 +201,17 @@ export default function InputDonasiPage() {
                 open={formOpen}
                 onClose={() => setFormOpen(false)}
                 onSaved={() => { setFormOpen(false); setPage(1); load(); }}
+            />
+
+            <ConfirmDialog
+                open={!!deleting}
+                title="Hapus Donasi"
+                message={`Hapus donasi "${deleting?.donor_name}" (${deleting?.ref_no})? Data diarsipkan dan bisa dipulihkan superadmin dari halaman Sampah.`}
+                confirmLabel="Hapus"
+                danger
+                loading={delLoading}
+                onConfirm={confirmDelete}
+                onClose={() => setDeleting(null)}
             />
         </div>
     );
