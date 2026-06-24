@@ -22,6 +22,7 @@ export default function PengaturanPage() {
     const [errMsg, setErrMsg] = useState("");
     const [saving, setSaving] = useState(false);
     const [savedAt, setSavedAt] = useState<string | null>(null);
+    const [removed, setRemoved] = useState<Record<string, boolean>>({});
 
     async function load() {
         setState("loading");
@@ -33,7 +34,7 @@ export default function PengaturanPage() {
                 if (f.type === "image") p[f.key] = f.url ?? null;
                 else v[f.key] = f.value ?? "";
             }));
-            setGroups(g); setValues(v); setPreviews(p); setFiles({});
+            setGroups(g); setValues(v); setPreviews(p); setFiles({}); setRemoved({});
             setState("ready");
         } catch (err) {
             const code = err instanceof Error ? err.message : "SERVER";
@@ -48,6 +49,7 @@ export default function PengaturanPage() {
         if (file.size > 5 * 1024 * 1024) { alert("Gambar maksimal 5MB."); return; }
         setFiles((p) => ({ ...p, [key]: file }));
         setPreviews((p) => ({ ...p, [key]: URL.createObjectURL(file) }));
+        setRemoved((p) => { const n = { ...p }; delete n[key]; return n; });
     }
 
     async function save() {
@@ -56,6 +58,7 @@ export default function PengaturanPage() {
             const fd = new FormData();
             Object.entries(values).forEach(([k, v]) => fd.set(k, v ?? ""));
             Object.entries(files).forEach(([k, f]) => fd.set(k, f));
+            Object.keys(removed).forEach((k) => { if (removed[k]) fd.set(`${k}__remove`, "1"); });
             await saveSettings(fd);
             setSavedAt(new Date().toLocaleTimeString("id-ID"));
             load();
@@ -66,6 +69,12 @@ export default function PengaturanPage() {
         } finally {
             setSaving(false);
         }
+    }
+
+    function removeImage(key: string) {
+        setPreviews((p) => ({ ...p, [key]: null }));
+        setFiles((p) => { const n = { ...p }; delete n[key]; return n; });
+        setRemoved((p) => ({ ...p, [key]: true }));
     }
 
     return (
@@ -115,11 +124,19 @@ export default function PengaturanPage() {
                                                         <Icon name="image" className="text-[24px] text-outline-variant" />
                                                     )}
                                                 </div>
-                                                <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-outline-variant px-4 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors">
-                                                    <Icon name="upload" className="text-[18px]" /> Unggah
-                                                    <input type="file" accept="image/*" className="hidden"
-                                                        onChange={(e) => pickImage(f.key, e.target.files?.[0])} />
-                                                </label>
+                                                <div className="flex flex-col gap-2">
+                                                    <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-outline-variant px-4 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors">
+                                                        <Icon name="upload" className="text-[18px]" /> Unggah
+                                                        <input type="file" accept="image/*" className="hidden"
+                                                            onChange={(e) => pickImage(f.key, e.target.files?.[0])} />
+                                                    </label>
+                                                    {previews[f.key] && (
+                                                        <button type="button" onClick={() => removeImage(f.key)}
+                                                            className="inline-flex items-center gap-2 rounded-lg border border-outline-variant px-4 py-2 text-sm text-error hover:bg-error-container/30 transition-colors">
+                                                            <Icon name="delete" className="text-[18px]" /> Hapus
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : f.type === "textarea" ? (
                                             <textarea rows={3} value={values[f.key] ?? ""} onChange={(e) => setValues((p) => ({ ...p, [f.key]: e.target.value }))}
