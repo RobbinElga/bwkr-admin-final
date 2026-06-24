@@ -7,20 +7,6 @@ import { saveBankAccount } from "@/services/bank";
 import { formatRupiah } from "@/lib/format";
 import type { BankAccount } from "@/types";
 
-const BANK_PRESETS = [
-    { value: "bca", label: "BCA", logo: "/bank-logos/bca.png" },
-    { value: "bni", label: "BNI", logo: "/bank-logos/bni.png" },
-    { value: "bri", label: "BRI", logo: "/bank-logos/bri.png" },
-    { value: "mandiri", label: "Mandiri", logo: "/bank-logos/mandiri.png" },
-    { value: "bsi", label: "BSI", logo: "/bank-logos/bsi.png" },
-    { value: "cimb", label: "CIMB Niaga", logo: "/bank-logos/cimb.png" },
-    { value: "permata", label: "Permata", logo: "/bank-logos/permata.png" },
-    { value: "muamalat", label: "Muamalat", logo: "/bank-logos/muamalat.png" },
-    { value: "btn", label: "BTN", logo: "/bank-logos/btn.png" },
-    { value: "danamon", label: "Danamon", logo: "/bank-logos/danamon.png" },
-];
-const CUSTOM = "__custom__";
-
 async function assetToFile(url: string): Promise<File | null> {
     try {
         const res = await fetch(url);
@@ -68,24 +54,10 @@ export function BankAccountFormModal({ open, account, onClose, onSaved }: {
         setErr(null);
     }, [open, account]);
 
-    const selectedValue = BANK_PRESETS.find((b) => b.label === bankName)?.value ?? CUSTOM;
-    const isCustom = selectedValue === CUSTOM;
-
     function handleType(next: "bank" | "qris") {
         setType(next);
         if (next === "qris" && !bankName) setBankName("QRIS");
         setErr(null);
-    }
-
-    function handlePickBank(value: string) {
-        if (value === CUSTOM) {
-            setBankName(""); setPresetLogo(null); setLogo(null);
-            setPreview(isEdit ? account?.logo_url ?? null : null);
-            return;
-        }
-        const preset = BANK_PRESETS.find((b) => b.value === value);
-        if (!preset) return;
-        setBankName(preset.label); setPresetLogo(preset.logo); setLogo(null); setPreview(preset.logo);
     }
 
     function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -164,7 +136,7 @@ export function BankAccountFormModal({ open, account, onClose, onSaved }: {
 
                 {type === "bank" ? (
                     <>
-                        {/* Pilih bank + preview logo */}
+                        {/* Nama bank + logo */}
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-lg border border-outline-variant bg-surface flex items-center justify-center overflow-hidden shrink-0">
                                 {preview ? (
@@ -175,26 +147,15 @@ export function BankAccountFormModal({ open, account, onClose, onSaved }: {
                                 )}
                             </div>
                             <label className="flex-1 flex flex-col gap-1.5">
-                                <span className="text-sm font-medium text-on-surface">Pilih Bank <span className="text-error">*</span></span>
-                                <select value={selectedValue} onChange={(e) => handlePickBank(e.target.value)}
-                                    className="rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                                    {BANK_PRESETS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
-                                    <option value={CUSTOM}>Lainnya (ketik manual)</option>
-                                </select>
+                                <span className="text-sm font-medium text-on-surface">Nama Bank <span className="text-error">*</span></span>
+                                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="mis. BCA / Bank Jateng Syariah"
+                                    className="rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" />
                             </label>
                         </div>
 
-                        {isCustom && (
-                            <label className="flex flex-col gap-1.5">
-                                <span className="text-sm font-medium text-on-surface">Nama Bank <span className="text-error">*</span></span>
-                                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="mis. Bank Jateng"
-                                    className="rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" />
-                            </label>
-                        )}
-
                         <label className="cursor-pointer inline-flex items-center gap-2 self-start rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors">
-                            <Icon name="upload" className="text-[18px]" /> Upload logo sendiri (opsional)
-                            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogo} className="hidden" />
+                            <Icon name="upload" className="text-[18px]" /> Upload logo bank (opsional)
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" onChange={handleLogo} className="hidden" />
                         </label>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
