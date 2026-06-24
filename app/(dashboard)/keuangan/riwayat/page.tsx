@@ -9,6 +9,7 @@ import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatRupiah, formatDate } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
+import { getDonationProof } from "@/services/claim";
 
 type Tab = "kas" | "donasi";
 type ViewState = "loading" | "ready" | "error";
@@ -62,6 +63,15 @@ export default function RiwayatPage() {
         } catch (err) { handleErr(err, setDonState); }
     }
 
+    async function viewProof(id: number) {
+        try {
+            const url = await getDonationProof(id);
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch {
+            alert("Gagal memuat bukti transfer.");
+        }
+    }
+
     useEffect(() => { if (tab === "kas") loadKas(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { if (tab === "donasi") loadDon(); }, [tab, page, status]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -108,6 +118,7 @@ export default function RiwayatPage() {
                                     <thead>
                                         <tr className="bg-surface-container-low/50 border-b border-outline-variant text-xs uppercase tracking-wide text-on-surface-variant">
                                             <th className="px-5 py-3 font-semibold">Tanggal</th>
+                                            <th className="px-5 py-3 font-semibold text-center">Bukti</th>
                                             <th className="px-5 py-3 font-semibold">Keterangan</th>
                                             <th className="px-5 py-3 font-semibold text-center">Tipe</th>
                                             <th className="px-5 py-3 font-semibold text-right">Nominal</th>
@@ -177,7 +188,7 @@ export default function RiwayatPage() {
                                     </thead>
                                     <tbody className="divide-y divide-outline-variant/60">
                                         {rows.length === 0 ? (
-                                            <tr><td colSpan={5} className="py-12 text-center text-on-surface-variant">Tidak ada donasi.</td></tr>
+                                            <tr><td colSpan={6} className="py-12 text-center text-on-surface-variant">Tidak ada donasi.</td></tr>
                                         ) : rows.map((d) => {
                                             const s = DON_STATUS[d.status] ?? DON_STATUS.pending;
                                             return (
@@ -187,6 +198,16 @@ export default function RiwayatPage() {
                                                     <td className="px-5 py-3 text-right font-mono text-on-surface whitespace-nowrap">{formatRupiah(d.amount)}</td>
                                                     <td className="px-5 py-3 text-center"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${s.cls}`}>{s.label}</span></td>
                                                     <td className="px-5 py-3 text-right text-on-surface-variant whitespace-nowrap">{formatDate(d.created_at)}</td>
+                                                    <td className="px-5 py-3 text-center">
+                                                        {d.has_proof ? (
+                                                            <button onClick={() => viewProof(d.id)} title="Lihat bukti transfer"
+                                                                className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                                                                <Icon name="description" className="text-[20px]" />
+                                                            </button>
+                                                        ) : (
+                                                            <Icon name="remove" className="text-[18px] text-outline-variant" />
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             );
                                         })}

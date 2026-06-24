@@ -11,6 +11,7 @@ import { DonationInputFormModal } from "@/components/donation/DonationInputFormM
 import { ExportButton } from "@/components/ui/ExportButton";
 import { getDonationInputs, deleteDonation } from "@/services/donation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { getDonationProof } from "@/services/claim";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -51,6 +52,15 @@ export default function InputDonasiPage() {
             if (code === "UNAUTHORIZED") { await logout(); router.replace("/login"); return; }
             setErrMsg(friendlyError(code));
             setState("error");
+        }
+    }
+
+    async function viewProof(id: number) {
+        try {
+            const url = await getDonationProof(id);
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch {
+            alert("Gagal memuat bukti transfer.");
         }
     }
 
@@ -162,7 +172,10 @@ export default function InputDonasiPage() {
                                             <td className="px-5 py-3 text-right text-on-surface-variant whitespace-nowrap">{formatDate(d.created_at)}</td>
                                             <td className="px-5 py-3 text-center">
                                                 {d.has_proof ? (
-                                                    <Icon name="description" className="text-[20px] text-primary" />
+                                                    <button onClick={() => viewProof(d.id)} title="Lihat bukti transfer"
+                                                        className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                                                        <Icon name="description" className="text-[20px]" />
+                                                    </button>
                                                 ) : (
                                                     <Icon name="remove" className="text-[18px] text-outline-variant" />
                                                 )}
