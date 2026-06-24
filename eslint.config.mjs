@@ -7,12 +7,18 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
   ]),
+  // Pola `load()` di useEffect & reset state saat modal dibuka dipakai di seluruh proyek.
+  // Rule ini bawaan baru eslint-plugin-react-hooks v6 — dimatikan agar konsisten.
+  {
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
