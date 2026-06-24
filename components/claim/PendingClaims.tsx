@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Claim } from "@/types";
-import { getClaims, approveClaim, rejectClaim } from "@/services/claim";
+import { getClaims, approveClaim, rejectClaim, deleteClaim } from "@/services/claim";
 import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatRupiah, formatDate } from "@/lib/format";
@@ -17,6 +17,10 @@ export function PendingClaims({ onChanged }: { onChanged?: () => void }) {
     const logout = useAdminAuth((s) => s.logout);
     const user = useAdminAuth((s) => s.user);
     const canApprove = user?.role === "super_admin" || user?.role === "admin";
+
+    const isSuper = user?.role === "super_admin";
+    const [deleting, setDeleting] = useState<Claim | null>(null);
+    const [delLoading, setDelLoading] = useState(false);
 
     const [state, setState] = useState<ViewState>("loading");
     const [claims, setClaims] = useState<Claim[]>([]);
@@ -55,6 +59,21 @@ export function PendingClaims({ onChanged }: { onChanged?: () => void }) {
         } finally {
             setConfirmLoading(false);
         }
+    }
+
+    async function confirmDelete() {
+        if (!deleting) return;
+        setDelLoading(true);
+        try {
+            await deleteClaim(deleting.id);
+            setDeleting(null);
+            load();
+            onChanged?.();
+        } catch (err) {
+            const code = err instanceof Error ? err.message : "SERVER";
+            if (code === "UNAUTHORIZED") { await logout(); router.replace("/login"); return; }
+            alert(friendlyError(code));
+        } finally { setDelLoading(false); }
     }
 
     if (state === "loading") {
@@ -105,22 +124,41 @@ export function PendingClaims({ onChanged }: { onChanged?: () => void }) {
                                 <td className="px-5 py-4 text-right font-mono text-on-surface whitespace-nowrap">{formatRupiah(c.amount)}</td>
                                 <td className="px-5 py-4 text-on-surface-variant whitespace-nowrap">{formatDate(c.created_at)}</td>
                                 <td className="px-5 py-4">
-                                    {canApprove ? (
-                                        <div className="flex justify-center gap-1">
-                                            <button onClick={() => setConfirm({ claim: c, action: "approve" })} title="Setujui"
-                                                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"><Icon name="check_circle" className="text-[18px]" /></button>
-                                            <button onClick={() => setConfirm({ claim: c, action: "reject" })} title="Tolak"
-                                                className="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors"><Icon name="cancel" className="text-[18px]" /></button>
-                                        </div>
-                                    ) : (
-                                        <p className="text-center text-xs text-tertiary-container">Menunggu admin</p>
-                                    )}
+                                    <div className="flex justify-center items-center gap-1">
+                                        {canApprove ? (
+                                            <>
+                                                <button onClick={() => setConfirm({ claim: c, action: "approve" })} title="Setujui"
+                                                    className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"><Icon name="check_circle" className="text-[18px]" /></button>
+                                                <button onClick={() => setConfirm({ claim: c, action: "reject" })} title="Tolak"
+                                                    className="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors"><Icon name="cancel" className="text-[18px]" /></button>
+                                            </>
+                                        ) : (
+                                            <span className="text-xs text-tertiary-container">Menunggu admin</span>
+                                        )}
+                                        {isSuper && (
+                                            <button onClick={() => setDeleting(c)} title="Hapus"
+                                                className="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors">
+                                                <Icon name="delete" className="text-[18px]" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmDialog
+                open={!!deleting}
+                title="Hapus Klaim"
+                message={`Hapus klaim ${formatRupiah(deleting?.amount ?? 0)} untuk ${deleting?.project?.name ?? "project ini"}? Bisa dipulihkan superadmin dari halaman Sampah.`}
+                confirmLabel="Hapus"
+                danger
+                loading={delLoading}
+                onConfirm={confirmDelete}
+                onClose={() => setDeleting(null)}
+            />
 
             <ConfirmDialog
                 open={!!confirm}

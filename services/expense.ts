@@ -119,3 +119,14 @@ export async function createExpense(payload: {
     }
     return (body as { data: Expense }).data;
 }
+
+export async function deleteExpense(id: number): Promise<void> {
+    let res: Response;
+    try {
+        res = await fetch(`${API}/admin/expenses/${id}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json", ...authHeaders() },
+        });
+    } catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}

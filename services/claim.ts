@@ -101,3 +101,14 @@ export async function getClaims(params: { status?: ClaimStatus | ""; page?: numb
     if (!res.ok) throw new Error(toErrorCode(res.status));
     return res.json();
 }
+
+export async function deleteClaim(id: number): Promise<void> {
+    let res: Response;
+    try {
+        res = await fetch(`${API}/admin/donations-claim/${id}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json", ...authHeaders() },
+        });
+    } catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}

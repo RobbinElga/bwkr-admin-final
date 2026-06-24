@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Expense, ExpenseStatus } from "@/types";
-import { getExpenses, approveExpense, rejectExpense, getExpenseFile } from "@/services/expense";
+import { getExpenses, approveExpense, rejectExpense, getExpenseFile, deleteExpense } from "@/services/expense";
 import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatRupiah, formatDate } from "@/lib/format";
@@ -33,6 +33,9 @@ export default function PengeluaranPage() {
     const [confirmLoading, setConfirmLoading] = useState(false);
     const user = useAdminAuth((s) => s.user);
     const canApprove = user?.role === "super_admin" || user?.role === "admin";
+    const isSuper = user?.role === "super_admin";
+    const [deleting, setDeleting] = useState<Expense | null>(null);
+    const [delLoading, setDelLoading] = useState(false);
 
     async function load() {
         setState("loading");
@@ -72,6 +75,20 @@ export default function PengeluaranPage() {
         } finally {
             setConfirmLoading(false);
         }
+    }
+
+    async function confirmDelete() {
+        if (!deleting) return;
+        setDelLoading(true);
+        try {
+            await deleteExpense(deleting.id);
+            setDeleting(null);
+            load();
+        } catch (err) {
+            const code = err instanceof Error ? err.message : "SERVER";
+            if (code === "UNAUTHORIZED") { await logout(); router.replace("/login"); return; }
+            alert(friendlyError(code));
+        } finally { setDelLoading(false); }
     }
 
     const filtered = useMemo(
@@ -181,20 +198,28 @@ export default function PengeluaranPage() {
                                             </td>
                                             <td className="px-5 py-4 text-on-surface-variant whitespace-nowrap">{formatDate(e.created_at)}</td>
                                             <td className="px-5 py-4">
-                                                {e.status === "pending" ? (
-                                                    canApprove ? (
-                                                        <div className="flex justify-center gap-1">
-                                                            <button onClick={() => setConfirm({ expense: e, action: "approve" })} title="Setujui"
-                                                                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"><Icon name="check_circle" className="text-[18px]" /></button>
-                                                            <button onClick={() => setConfirm({ expense: e, action: "reject" })} title="Tolak"
-                                                                className="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors"><Icon name="cancel" className="text-[18px]" /></button>
-                                                        </div>
+                                                <div className="flex justify-center items-center gap-1">
+                                                    {e.status === "pending" ? (
+                                                        canApprove ? (
+                                                            <>
+                                                                <button onClick={() => setConfirm({ expense: e, action: "approve" })} title="Setujui"
+                                                                    className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"><Icon name="check_circle" className="text-[18px]" /></button>
+                                                                <button onClick={() => setConfirm({ expense: e, action: "reject" })} title="Tolak"
+                                                                    className="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors"><Icon name="cancel" className="text-[18px]" /></button>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-xs text-tertiary-container">Menunggu super admin</span>
+                                                        )
                                                     ) : (
-                                                        <p className="text-center text-xs text-tertiary-container">Menunggu super admin</p>
-                                                    )
-                                                ) : (
-                                                    <p className="text-center text-xs text-on-surface-variant">—</p>
-                                                )}
+                                                        <span className="text-xs text-on-surface-variant">â€”</span>
+                                                    )}
+                                                    {isSuper && (
+                                                        <button onClick={() => setDeleting(e)} title="Hapus"
+                                                            className="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors">
+                                                            <Icon name="delete" className="text-[18px]" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -206,7 +231,16 @@ export default function PengeluaranPage() {
             )}
 
             <ExpenseFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); load(); }} />
-
+            <ConfirmDialog
+                open={!!deleting}
+                title="Hapus Pengeluaran"
+                message={`Hapus pengeluaran ${formatRupiah(deleting?.amount ?? 0)} untuk ${deleting?.project?.name ?? "project ini"}? Bisa dipulihkan superadmin dari halaman Sampah.`}
+                confirmLabel="Hapus"
+                danger
+                loading={delLoading}
+                onConfirm={confirmDelete}
+                onClose={() => setDeleting(null)}
+            />
             <ConfirmDialog
                 open={!!confirm}
                 title={confirm?.action === "approve" ? "Setujui Pengeluaran" : "Tolak Pengeluaran"}
