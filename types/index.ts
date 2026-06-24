@@ -145,6 +145,7 @@ export interface Expense {
     notes: string | null;
     approved_at: string | null;
     created_at: string;
+    deleted_at?: string | null;
 }
 
 export interface ProjectDonor {
@@ -190,6 +191,7 @@ export interface DonationInput {
     status: DonationStatus;
     user_id: number | null;
     created_at: string;
+    deleted_at?: string | null;
 }
 
 export type ClaimStatus = "pending" | "approved" | "rejected";
@@ -205,6 +207,7 @@ export interface Claim {
     status: ClaimStatus;
     approved_at: string | null;
     created_at: string;
+    deleted_at?: string | null;
 }
 
 export interface Achievement {

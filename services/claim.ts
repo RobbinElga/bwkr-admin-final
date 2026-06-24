@@ -112,3 +112,23 @@ export async function deleteClaim(id: number): Promise<void> {
     } catch { throw new Error("NETWORK"); }
     if (!res.ok) throw new Error(toErrorCode(res.status));
 }
+
+export async function getTrashedClaims(): Promise<Claim[]> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-claim/trashed`, { headers: { Accept: "application/json", ...authHeaders() }, cache: "no-store" }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return (await res.json() as { data: Claim[] }).data;
+}
+export async function restoreClaim(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-claim/${id}/restore`, { method: "POST", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}
+export async function forceDeleteClaim(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-claim/${id}/force`, { method: "DELETE", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}

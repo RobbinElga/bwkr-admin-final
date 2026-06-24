@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Program, Project } from "@/types";
 import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { Icon } from "@/components/ui/Icon";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getTrashedPrograms, restoreProgram, forceDeleteProgram } from "@/services/program";
 import { getTrashedProjects, restoreProject, forceDeleteProject } from "@/services/project";
+import type { Program, Project, DonationInput, Claim, Expense } from "@/types";
+import { getTrashedDonations, restoreDonation, forceDeleteDonation } from "@/services/donation";
+import { getTrashedClaims, restoreClaim, forceDeleteClaim } from "@/services/claim";
+import { getTrashedExpenses, restoreExpense, forceDeleteExpense } from "@/services/expense";
+import { formatRupiah } from "@/lib/format";
 
 type ViewState = "loading" | "ready" | "error";
-type Purge = { kind: "program" | "project"; id: number; name: string } | null;
+type Kind = "program" | "project" | "donation" | "claim" | "expense";
+type Purge = { kind: Kind; id: number; name: string } | null;
 
 export default function SampahPage() {
     const router = useRouter();
@@ -24,6 +29,9 @@ export default function SampahPage() {
     const [busyId, setBusyId] = useState<string | null>(null);
     const [purge, setPurge] = useState<Purge>(null);
     const [purgeLoading, setPurgeLoading] = useState(false);
+    const [donations, setDonations] = useState<DonationInput[]>([]);
+    const [claims, setClaims] = useState<Claim[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
 
     function handleAuthErr(err: unknown): string {
         const code = err instanceof Error ? err.message : "SERVER";
@@ -34,18 +42,25 @@ export default function SampahPage() {
     async function load() {
         setState("loading");
         try {
-            const [pg, pj] = await Promise.all([getTrashedPrograms(), getTrashedProjects()]);
+            const [pg, pj, dn, cl, ex] = await Promise.all([
+                getTrashedPrograms(), getTrashedProjects(),
+                getTrashedDonations(), getTrashedClaims(), getTrashedExpenses(),
+            ]);
             setPrograms(pg); setProjects(pj);
+            setDonations(dn); setClaims(cl); setExpenses(ex);
             setState("ready");
         } catch (err) { setErrMsg(handleAuthErr(err)); setState("error"); }
     }
     useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    async function doRestore(kind: "program" | "project", id: number) {
+    async function doRestore(kind: Kind, id: number) {
         setBusyId(`${kind}-${id}`);
         try {
             if (kind === "program") { await restoreProgram(id); setPrograms((p) => p.filter((x) => x.id !== id)); }
-            else { await restoreProject(id); setProjects((p) => p.filter((x) => x.id !== id)); }
+            else if (kind === "project") { await restoreProject(id); setProjects((p) => p.filter((x) => x.id !== id)); }
+            else if (kind === "donation") { await restoreDonation(id); setDonations((p) => p.filter((x) => x.id !== id)); }
+            else if (kind === "claim") { await restoreClaim(id); setClaims((p) => p.filter((x) => x.id !== id)); }
+            else { await restoreExpense(id); setExpenses((p) => p.filter((x) => x.id !== id)); }
         } catch (err) { alert(handleAuthErr(err)); }
         finally { setBusyId(null); }
     }
@@ -55,13 +70,16 @@ export default function SampahPage() {
         setPurgeLoading(true);
         try {
             if (purge.kind === "program") { await forceDeleteProgram(purge.id); setPrograms((p) => p.filter((x) => x.id !== purge.id)); }
-            else { await forceDeleteProject(purge.id); setProjects((p) => p.filter((x) => x.id !== purge.id)); }
+            else if (purge.kind === "project") { await forceDeleteProject(purge.id); setProjects((p) => p.filter((x) => x.id !== purge.id)); }
+            else if (purge.kind === "donation") { await forceDeleteDonation(purge.id); setDonations((p) => p.filter((x) => x.id !== purge.id)); }
+            else if (purge.kind === "claim") { await forceDeleteClaim(purge.id); setClaims((p) => p.filter((x) => x.id !== purge.id)); }
+            else { await forceDeleteExpense(purge.id); setExpenses((p) => p.filter((x) => x.id !== purge.id)); }
             setPurge(null);
         } catch (err) { alert(handleAuthErr(err)); }
         finally { setPurgeLoading(false); }
     }
 
-    const empty = programs.length === 0 && projects.length === 0;
+    const empty = programs.length === 0 && projects.length === 0 && donations.length === 0 && claims.length === 0 && expenses.length === 0;
 
     return (
         <div>
@@ -93,6 +111,15 @@ export default function SampahPage() {
                     <TrashSection title="Proyek" icon="folder_open" kind="project" busyId={busyId} onRestore={doRestore}
                         rows={projects.map((p) => ({ id: p.id, name: p.name, sub: p.deleted_at ?? null }))}
                         onPurge={(id, name) => setPurge({ kind: "project", id, name })} />
+                    <TrashSection title="Donasi" icon="volunteer_activism" kind="donation" busyId={busyId} onRestore={doRestore}
+                        rows={donations.map((d) => ({ id: d.id, name: `${d.donor_name} — ${formatRupiah(d.amount)}`, sub: d.deleted_at ?? null }))}
+                        onPurge={(id, name) => setPurge({ kind: "donation", id, name })} />
+                    <TrashSection title="Klaim" icon="task" kind="claim" busyId={busyId} onRestore={doRestore}
+                        rows={claims.map((c) => ({ id: c.id, name: `${c.project?.name ?? "Project"} — ${formatRupiah(c.amount)}`, sub: c.deleted_at ?? null }))}
+                        onPurge={(id, name) => setPurge({ kind: "claim", id, name })} />
+                    <TrashSection title="Pengeluaran" icon="receipt_long" kind="expense" busyId={busyId} onRestore={doRestore}
+                        rows={expenses.map((e) => ({ id: e.id, name: `${e.project?.name ?? "Project"} — ${formatRupiah(e.amount)}`, sub: e.deleted_at ?? null }))}
+                        onPurge={(id, name) => setPurge({ kind: "expense", id, name })} />
                 </div>
             )}
 
@@ -107,9 +134,9 @@ export default function SampahPage() {
 function TrashSection({ title, icon, rows, kind, busyId, onRestore, onPurge }: {
     title: string; icon: string;
     rows: { id: number; name: string; sub: string | null }[];
-    kind: "program" | "project";
+    kind: Kind;
     busyId: string | null;
-    onRestore: (kind: "program" | "project", id: number) => void;
+    onRestore: (kind: Kind, id: number) => void;
     onPurge: (id: number, name: string) => void;
 }) {
     if (rows.length === 0) return null;

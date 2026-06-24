@@ -130,3 +130,23 @@ export async function deleteExpense(id: number): Promise<void> {
     } catch { throw new Error("NETWORK"); }
     if (!res.ok) throw new Error(toErrorCode(res.status));
 }
+
+export async function getTrashedExpenses(): Promise<Expense[]> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/expenses/trashed`, { headers: { Accept: "application/json", ...authHeaders() }, cache: "no-store" }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return (await res.json() as { data: Expense[] }).data;
+}
+export async function restoreExpense(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/expenses/${id}/restore`, { method: "POST", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}
+export async function forceDeleteExpense(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/expenses/${id}/force`, { method: "DELETE", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}

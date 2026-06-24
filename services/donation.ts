@@ -112,3 +112,23 @@ export async function deleteDonation(id: number): Promise<void> {
     } catch { throw new Error("NETWORK"); }
     if (!res.ok) throw new Error(toErrorCode(res.status));
 }
+
+export async function getTrashedDonations(): Promise<DonationInput[]> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-input/trashed`, { headers: { Accept: "application/json", ...authHeaders() }, cache: "no-store" }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return (await res.json() as { data: DonationInput[] }).data;
+}
+export async function restoreDonation(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-input/${id}/restore`, { method: "POST", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}
+export async function forceDeleteDonation(id: number): Promise<void> {
+    let res: Response;
+    try { res = await fetch(`${API}/admin/donations-input/${id}/force`, { method: "DELETE", headers: { Accept: "application/json", ...authHeaders() } }); }
+    catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}
