@@ -34,6 +34,7 @@ export default function UsersPage() {
     const [meta, setMeta] = useState<{ current_page: number; last_page: number; total: number } | null>(null);
     const [errMsg, setErrMsg] = useState("");
 
+    const [tab, setTab] = useState<"staf" | "donatur">("staf");
     const [search, setSearch] = useState("");
     const [role, setRole] = useState<StaffRole | "">("");
     const [page, setPage] = useState(1);
@@ -44,14 +45,15 @@ export default function UsersPage() {
     const [pwdConfirm, setPwdConfirm] = useState<StaffUser | null>(null);
     const [pwdLoading, setPwdLoading] = useState(false);
     const [tempPwd, setTempPwd] = useState<{ user: string; pwd: string } | null>(null);
-    const [busyId, setBusyId] = useState<number | null>(null);
+    const [busyId] = useState<number | null>(null);
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<StaffUser | null>(null);
 
     async function load() {
         setState("loading");
         try {
-            const res = await getUsers({ search, role, page });
+            const effectiveRole = tab === "donatur" ? "donatur" : role;
+            const res = await getUsers({ search, role: effectiveRole, page });
             setRows(res.data);
             setMeta({ current_page: res.meta.current_page, last_page: res.meta.last_page, total: res.meta.total });
             setState("ready");
@@ -62,7 +64,7 @@ export default function UsersPage() {
             setState("error");
         }
     }
-    useEffect(() => { load(); }, [page, role]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { load(); }, [page, role, tab]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => {
         const t = setTimeout(() => { setPage(1); load(); }, 400);
         return () => clearTimeout(t);
@@ -106,14 +108,25 @@ export default function UsersPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-on-surface">Manajemen User</h2>
-                    <p className="text-sm text-on-surface-variant mt-1">Kelola akun staf, role, dan keamanan akun.</p>
+                    <p className="text-sm text-on-surface-variant mt-1">Kelola akun staf & lihat daftar donatur terdaftar.</p>
                 </div>
-                <button
-                    onClick={() => { setEditing(null); setFormOpen(true); }}
-                    // TODO: buka form tambah (sub-langkah berikutnya)
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-container transition-colors self-start sm:self-auto">
-                    <Icon name="person_add" className="text-[18px]" /> Tambah Staf
-                </button>
+                {tab === "staf" && (
+                    <button
+                        onClick={() => { setEditing(null); setFormOpen(true); }}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-container transition-colors self-start sm:self-auto">
+                        <Icon name="person_add" className="text-[18px]" /> Tambah Staf
+                    </button>
+                )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mb-6 border-b border-outline-variant">
+                {([["staf", "Staf"], ["donatur", "Donatur"]] as const).map(([key, label]) => (
+                    <button key={key} onClick={() => { setTab(key); setPage(1); }}
+                        className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === key ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:text-primary"}`}>
+                        {label}
+                    </button>
+                ))}
             </div>
 
             {/* Filter */}
@@ -123,14 +136,16 @@ export default function UsersPage() {
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau email..."
                         className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-outline-variant bg-surface text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" />
                 </div>
-                <select value={role} onChange={(e) => { setRole(e.target.value as StaffRole | ""); setPage(1); }}
-                    className="rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    <option value="">Semua Role</option>
-                    <option value="super_admin">Super Admin</option>
-                    <option value="admin">Admin</option>
-                    <option value="cs">CS</option>
-                    <option value="fundraiser">Fundraiser</option>
-                </select>
+                {tab === "staf" && (
+                    <select value={role} onChange={(e) => { setRole(e.target.value as StaffRole | ""); setPage(1); }}
+                        className="rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                        <option value="">Semua Role</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                        <option value="cs">CS</option>
+                        <option value="fundraiser">Fundraiser</option>
+                    </select>
+                )}
             </div>
 
             {state === "loading" ? (
@@ -147,8 +162,54 @@ export default function UsersPage() {
             ) : rows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center py-16 border border-dashed border-outline-variant rounded-xl">
                     <Icon name="group" className="text-[40px] text-outline-variant mb-3" />
-                    <h3 className="text-base font-semibold text-on-surface">Belum Ada Staf</h3>
-                    <p className="text-sm text-on-surface-variant mt-1">{search || role ? "Tidak ada yang cocok dengan filter." : "Tambahkan akun staf pertama."}</p>
+                    <h3 className="text-base font-semibold text-on-surface">{tab === "donatur" ? "Belum Ada Donatur" : "Belum Ada Staf"}</h3>
+                    <p className="text-sm text-on-surface-variant mt-1">{search || role ? "Tidak ada yang cocok dengan filter." : (tab === "donatur" ? "Belum ada donatur terdaftar." : "Tambahkan akun staf pertama.")}</p>
+                </div>
+            ) : tab === "donatur" ? (
+                <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm min-w-[640px]">
+                            <thead>
+                                <tr className="bg-surface-container-low/50 border-b border-outline-variant text-xs uppercase tracking-wide text-on-surface-variant">
+                                    <th className="px-5 py-3 font-semibold">Donatur</th>
+                                    <th className="px-5 py-3 font-semibold">Kontak</th>
+                                    <th className="px-5 py-3 font-semibold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-outline-variant/60">
+                                {rows.map((u) => (
+                                    <tr key={u.id} className="hover:bg-surface-container-low transition-colors">
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-xs font-bold shrink-0">{initials(u.name)}</div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-on-surface line-clamp-1">{u.name}</p>
+                                                    <p className="text-xs text-on-surface-variant">Bergabung {formatDate(u.created_at)}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <p className="text-on-surface">{u.email}</p>
+                                            <p className="text-xs text-on-surface-variant font-mono">{u.phone}</p>
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${u.is_active ? "bg-primary/10 text-primary" : "bg-error/10 text-error"}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? "bg-primary" : "bg-error"}`} />
+                                                {u.is_active ? "Aktif" : "Nonaktif"}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {meta && meta.last_page > 1 && (
+                        <div className="flex items-center justify-center gap-3 py-4 border-t border-outline-variant">
+                            <button disabled={meta.current_page <= 1} onClick={() => setPage((p) => p - 1)} className="inline-flex items-center gap-1 rounded-lg border border-outline-variant px-3 py-1.5 text-sm text-on-surface hover:bg-surface-container disabled:opacity-40 transition-colors"><Icon name="chevron_left" className="text-[18px]" /> Sebelumnya</button>
+                            <span className="text-sm text-on-surface-variant">Hal {meta.current_page} / {meta.last_page}</span>
+                            <button disabled={meta.current_page >= meta.last_page} onClick={() => setPage((p) => p + 1)} className="inline-flex items-center gap-1 rounded-lg border border-outline-variant px-3 py-1.5 text-sm text-on-surface hover:bg-surface-container disabled:opacity-40 transition-colors">Berikutnya <Icon name="chevron_right" className="text-[18px]" /></button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
@@ -201,8 +262,7 @@ export default function UsersPage() {
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="flex justify-end gap-1">
-                                                    <button
-                                                        onClick={() => { setEditing(u); setFormOpen(true); }}
+                                                    <button onClick={() => { setEditing(u); setFormOpen(true); }}
                                                         className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors" title="Edit"><Icon name="edit" className="text-[18px]" /></button>
                                                     <button onClick={() => setPwdConfirm(u)} className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="Reset Password"><Icon name="lock_reset" className="text-[18px]" /></button>
                                                     <button onClick={() => setConfirm({ user: u, action: "reset-2fa" })} disabled={busyId === u.id} className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="Reset 2FA"><Icon name="shield_lock" className="text-[18px]" /></button>
@@ -242,7 +302,6 @@ export default function UsersPage() {
                 onAuthFail={async () => { await logout(); router.replace("/login"); }}
             />
 
-            {/* Confirm hapus / reset 2FA */}
             <ConfirmDialog
                 open={!!confirm}
                 title={confirm?.action === "delete" ? "Hapus Staf" : "Reset 2FA"}
@@ -258,7 +317,6 @@ export default function UsersPage() {
                 onClose={() => setConfirm(null)}
             />
 
-            {/* Confirm reset password */}
             <ConfirmDialog
                 open={!!pwdConfirm}
                 title="Reset Kata Sandi"
@@ -269,7 +327,6 @@ export default function UsersPage() {
                 onClose={() => setPwdConfirm(null)}
             />
 
-            {/* Tampilkan temp password sekali */}
             {tempPwd && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setTempPwd(null)}>
                     <div className="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>

@@ -22,7 +22,7 @@ async function parseError(res: Response): Promise<never> {
     throw new Error((body as { message?: string }).message ?? toErrorCode(res.status));
 }
 
-export async function getUsers(params: { role?: StaffRole | ""; search?: string; page?: number } = {}): Promise<Paginated<StaffUser>> {
+export async function getUsers(params: { role?: StaffRole | "donatur" | ""; search?: string; page?: number } = {}): Promise<Paginated<StaffUser>> {
     const qs = new URLSearchParams();
     if (params.role) qs.set("role", params.role);
     if (params.search) qs.set("search", params.search);
