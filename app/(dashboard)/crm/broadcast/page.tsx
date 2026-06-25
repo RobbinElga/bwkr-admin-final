@@ -4,11 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BroadcastTemplate, DonorTier } from "@/types";
 import { getTemplates, sendBroadcast } from "@/services/crm";
-import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useAdminAuth } from "@/stores/auth";
+import { WhatsappSettingsCard } from "@/components/crm/WhatsappSettingsCard";
 
 const VARIABLES = ["[Nama]", "[Nominal]", "[Project]"];
 
@@ -21,6 +22,8 @@ const TARGETS: { value: DonorTier | ""; label: string; desc: string }[] = [
 export default function BroadcastPage() {
     const router = useRouter();
     const logout = useAdminAuth((s) => s.logout);
+    const role = useAdminAuth((s) => s.user?.role);
+    const isAdmin = role === "super_admin" || role === "admin";
 
     const [templates, setTemplates] = useState<BroadcastTemplate[]>([]);
     const [title, setTitle] = useState("");
@@ -131,6 +134,12 @@ export default function BroadcastPage() {
                     <Icon name="description" className="text-[18px]" /> Kelola Template
                 </a>
             </div>
+
+            {isAdmin && (
+                <div className="mb-6">
+                    <WhatsappSettingsCard />
+                </div>
+            )}
 
             {err && (
                 <div className="flex items-start gap-2 rounded-lg bg-error-container px-4 py-3 text-sm text-on-error-container mb-4">

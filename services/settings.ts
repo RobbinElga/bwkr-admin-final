@@ -31,3 +31,26 @@ export async function saveSettings(fd: FormData): Promise<void> {
     });
     if (!res.ok) throw new Error(toErrorCode(res.status));
 }
+
+export interface WhatsappSettings {
+    wa_enabled: boolean;
+    wa_api_key_set: boolean;
+}
+
+export async function getWhatsappSettings(): Promise<WhatsappSettings> {
+    const res = await fetch(`${API}/admin/whatsapp-settings`, {
+        headers: { Accept: "application/json", ...authHeaders() },
+        cache: "no-store",
+    });
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return res.json();
+}
+
+export async function saveWhatsappSettings(payload: { wa_api_key?: string; wa_enabled?: boolean }): Promise<void> {
+    const res = await fetch(`${API}/admin/whatsapp-settings`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+}
