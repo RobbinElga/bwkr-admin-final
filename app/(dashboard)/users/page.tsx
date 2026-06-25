@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StaffUser, StaffRole } from "@/types";
-import { getUsers, deleteUser, resetUserPassword, resetUserTwoFactor } from "@/services/user";
 import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { UserFormModal } from "@/components/user/UserFormModal";
+import { getUsers, deleteUser, resetUserPassword, resetUserTwoFactor, getUserCounts } from "@/services/user";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -48,6 +48,7 @@ export default function UsersPage() {
     const [busyId] = useState<number | null>(null);
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<StaffUser | null>(null);
+    const [counts, setCounts] = useState<{ staff: number; donatur: number } | null>(null);
 
     async function load() {
         setState("loading");
@@ -57,6 +58,7 @@ export default function UsersPage() {
             setRows(res.data);
             setMeta({ current_page: res.meta.current_page, last_page: res.meta.last_page, total: res.meta.total });
             setState("ready");
+            getUserCounts().then(setCounts).catch(() => { });
         } catch (err) {
             const code = err instanceof Error ? err.message : "SERVER";
             if (code === "UNAUTHORIZED") { await logout(); router.replace("/login"); return; }
@@ -121,10 +123,18 @@ export default function UsersPage() {
 
             {/* Tabs */}
             <div className="flex gap-1 mb-6 border-b border-outline-variant">
-                {([["staf", "Staf"], ["donatur", "Donatur"]] as const).map(([key, label]) => (
-                    <button key={key} onClick={() => { setTab(key); setPage(1); }}
-                        className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === key ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:text-primary"}`}>
-                        {label}
+                {[
+                    { key: "staf" as const, label: "Staf", count: counts?.staff },
+                    { key: "donatur" as const, label: "Donatur", count: counts?.donatur },
+                ].map((t) => (
+                    <button key={t.key} onClick={() => { setTab(t.key); setPage(1); }}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === t.key ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:text-primary"}`}>
+                        {t.label}
+                        {typeof t.count === "number" && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${tab === t.key ? "bg-primary-container text-on-primary-container" : "bg-surface-container-high text-on-surface-variant"}`}>
+                                {t.count}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>

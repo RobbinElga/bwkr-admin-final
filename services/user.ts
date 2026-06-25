@@ -99,3 +99,15 @@ export async function getAuditLogs(params: { action?: string; page?: number } = 
     if (!res.ok) throw new Error(toErrorCode(res.status));
     return res.json();
 }
+
+export async function getUserCounts(): Promise<{ staff: number; donatur: number }> {
+    let res: Response;
+    try {
+        res = await fetch(`${API}/admin/users/counts`, {
+            headers: { Accept: "application/json", ...authHeaders() },
+            cache: "no-store",
+        });
+    } catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return res.json();
+}
