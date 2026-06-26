@@ -73,15 +73,15 @@ export async function getClaimProjects(): Promise<Project[]> {
 export async function getDonationProof(donationId: number): Promise<string> {
     let res: Response;
     try {
-        res = await fetch(`${API}/admin/donations-input/${donationId}/proof`, {
-            headers: { Accept: "application/octet-stream", ...authHeaders() },
+        res = await fetch(`${API}/admin/donations-input/${donationId}/proof-url`, {
+            headers: { Accept: "application/json", ...authHeaders() },
         });
     } catch {
         throw new Error("NETWORK");
     }
     if (!res.ok) throw new Error(toErrorCode(res.status));
-    const blob = await res.blob();
-    return URL.createObjectURL(blob);
+    const body = await res.json();
+    return body.url as string;
 }
 
 export async function getClaims(params: { status?: ClaimStatus | ""; page?: number } = {}): Promise<Paginated<Claim>> {
