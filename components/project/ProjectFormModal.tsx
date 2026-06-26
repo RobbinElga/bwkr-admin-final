@@ -38,6 +38,10 @@ export function ProjectFormModal({ open, project, programId, programName, onClos
     const [banks, setBanks] = useState<BankAccount[]>([]);
     const [selectedBankIds, setSelectedBankIds] = useState<number[]>([]);
 
+    const [existing, setExisting] = useState<string[]>([]);
+    const [newFiles, setNewFiles] = useState<File[]>([]);
+    const [newPreviews, setNewPreviews] = useState<string[]>([]);
+
     useEffect(() => {
         if (!open) return;
         setName(project?.name ?? "");
@@ -48,8 +52,9 @@ export function ProjectFormModal({ open, project, programId, programName, onClos
         setEndDate(project?.end_date ?? "");
         setTarget(project?.target_amount ?? 0);
         setStatus(project?.status ?? "draft");
-        setImages([]);
-        setPreviews(project?.image_urls ?? []);
+        setExisting(project?.image_urls ?? []);
+        setNewFiles([]);
+        setNewPreviews([]);
         setSelectedBankIds(project?.bank_accounts?.map((b) => b.id) ?? []);
         getAdminBankAccounts().then(setBanks).catch(() => setBanks([]));
         setErr(null);
@@ -59,14 +64,21 @@ export function ProjectFormModal({ open, project, programId, programName, onClos
         if (!slugTouched) setSlug(slugify(name));
     }, [name, slugTouched]);
 
-    function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
         const files = Array.from(e.target.files ?? []);
-        if (files.length > 10) { setErr("Maksimal 10 gambar."); return; }
-        const tooBig = files.find((f) => f.size > 10 * 1024 * 1024);
-        if (tooBig) { setErr("Setiap gambar maksimal 10MB."); return; }
-        setImages(files);
-        setPreviews(files.map((f) => URL.createObjectURL(f)));
+        e.target.value = ""; // reset agar bisa pilih file yang sama lagi
+        if (existing.length + newFiles.length + files.length > 10) { setErr("Maksimal 10 gambar."); return; }
+        if (files.find((f) => f.size > 10 * 1024 * 1024)) { setErr("Setiap gambar maksimal 10MB."); return; }
+        setNewFiles((prev) => [...prev, ...files]);
+        setNewPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
         setErr(null);
+    }
+    function removeExisting(i: number) {
+        setExisting((prev) => prev.filter((_, idx) => idx !== i));
+    }
+    function removeNew(i: number) {
+        setNewFiles((prev) => prev.filter((_, idx) => idx !== i));
+        setNewPreviews((prev) => prev.filter((_, idx) => idx !== i));
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -86,7 +98,8 @@ export function ProjectFormModal({ open, project, programId, programName, onClos
                     end_date: endDate || undefined,
                     target_amount: target,
                     status,
-                    images,
+                    images: newFiles,
+                    kept_images: existing,
                     bank_account_ids: selectedBankIds,
                 },
                 project?.slug
@@ -117,18 +130,32 @@ export function ProjectFormModal({ open, project, programId, programName, onClos
                 <div>
                     <span className="text-sm font-medium text-on-surface">Gambar Project (maks 10)</span>
                     <div className="mt-1.5 flex flex-wrap gap-2">
-                        {previews.map((src, i) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img key={i} src={src} alt={`gambar ${i + 1}`} className="w-20 h-20 rounded-lg object-cover border border-outline-variant" />
+                        {existing.map((src, i) => (
+                            <div key={`e-${i}`} className="relative w-20 h-20">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={src} alt={`gambar ${i + 1}`} className="w-20 h-20 rounded-lg object-cover border border-outline-variant" />
+                                <button type="button" onClick={() => removeExisting(i)}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-error text-on-error flex items-center justify-center shadow">
+                                    <Icon name="close" className="text-[14px]" />
+                                </button>
+                            </div>
+                        ))}
+                        {newPreviews.map((src, i) => (
+                            <div key={`n-${i}`} className="relative w-20 h-20">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={src} alt={`baru ${i + 1}`} className="w-20 h-20 rounded-lg object-cover border-2 border-primary/40" />
+                                <button type="button" onClick={() => removeNew(i)}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-error text-on-error flex items-center justify-center shadow">
+                                    <Icon name="close" className="text-[14px]" />
+                                </button>
+                            </div>
                         ))}
                         <label className="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors text-on-surface-variant">
                             <Icon name="add_photo_alternate" className="text-[24px]" />
-                            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImages} className="hidden" />
+                            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleAddImages} className="hidden" />
                         </label>
                     </div>
-                    {isEdit && (
-                        <p className="text-xs text-on-surface-variant mt-1.5">Memilih gambar baru akan mengganti semua gambar lama.</p>
-                    )}
+                    <p className="text-xs text-on-surface-variant mt-1.5">Klik × untuk hapus. Gambar baru ditambahkan ke yang sudah ada (tidak menimpa).</p>
                 </div>
 
                 <label className="flex flex-col gap-1.5">

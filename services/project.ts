@@ -51,6 +51,7 @@ export async function saveProject(
         target_amount?: number;
         status?: ProjectStatus;
         images?: File[];
+        kept_images?: string[];
         bank_account_ids?: number[];
     },
     editSlug?: string
@@ -65,6 +66,7 @@ export async function saveProject(
     if (payload.target_amount != null) fd.set("target_amount", String(payload.target_amount));
     if (payload.status) fd.set("status", payload.status);
     (payload.images ?? []).forEach((f) => fd.append("images[]", f));
+    (payload.kept_images ?? []).forEach((u) => fd.append("kept_images[]", u));
     (payload.bank_account_ids ?? []).forEach((id) => fd.append("bank_account_ids[]", String(id)));
 
     const isUpdate = Boolean(editSlug);
