@@ -52,6 +52,7 @@ export async function saveProgram(
         status?: ProgramStatus;
         order?: number;
         image?: File | null;
+        remove_image?: boolean;
     },
     editSlug?: string       // jika diisi → mode UPDATE pada program dgn slug ini
 ): Promise<Program> {
@@ -62,6 +63,7 @@ export async function saveProgram(
     if (payload.status) fd.set("status", payload.status);
     if (payload.order != null) fd.set("order", String(payload.order));
     if (payload.image) fd.set("image", payload.image);
+    if (payload.remove_image) fd.set("remove_image", "1");
 
     const isUpdate = Boolean(editSlug);
     if (isUpdate) fd.set("_method", "PUT"); // method spoofing untuk multipart

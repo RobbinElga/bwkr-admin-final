@@ -32,6 +32,7 @@ export function ProgramFormModal({ open, program, onClose, onSaved }: {
 
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
+    const [removeImg, setRemoveImg] = useState(false);
 
     // Reset / prefill saat modal dibuka
     useEffect(() => {
@@ -43,6 +44,7 @@ export function ProgramFormModal({ open, program, onClose, onSaved }: {
         setStatus(program?.status ?? "aktif");
         setOrder(program?.order ?? 0);
         setImage(null);
+        setRemoveImg(false);
         setPreview(program?.image_url ?? null);
         setErr(null);
     }, [open, program]);
@@ -58,7 +60,14 @@ export function ProgramFormModal({ open, program, onClose, onSaved }: {
         if (file.size > 10 * 1024 * 1024) { setErr("Ukuran gambar maksimal 10MB."); return; }
         setImage(file);
         setPreview(URL.createObjectURL(file));
+        setRemoveImg(false);
         setErr(null);
+    }
+
+    function removeImage() {
+        setImage(null);
+        setPreview(null);
+        setRemoveImg(true);
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -68,7 +77,7 @@ export function ProgramFormModal({ open, program, onClose, onSaved }: {
         setLoading(true);
         try {
             await saveProgram(
-                { name: name.trim(), slug: slug || undefined, description, status, order, image },
+                { name: name.trim(), slug: slug || undefined, description, status, order, image, remove_image: removeImg },
                 program?.slug // jika ada → mode update
             );
             onSaved();
@@ -100,10 +109,18 @@ export function ProgramFormModal({ open, program, onClose, onSaved }: {
                                 <Icon name="image" className="text-[28px] text-outline-variant" />
                             )}
                         </div>
-                        <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors">
-                            <Icon name="upload" className="text-[18px]" /> Pilih Gambar
-                            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImage} className="hidden" />
-                        </label>
+                        <div className="flex flex-col gap-2">
+                            <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-outline-variant px-3 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors">
+                                <Icon name="upload" className="text-[18px]" /> {preview ? "Ganti Gambar" : "Pilih Gambar"}
+                                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImage} className="hidden" />
+                            </label>
+                            {preview && (
+                                <button type="button" onClick={removeImage}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-outline-variant px-3 py-2 text-sm text-error hover:bg-error-container/30 transition-colors">
+                                    <Icon name="delete" className="text-[18px]" /> Hapus Gambar
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <p className="text-xs text-on-surface-variant mt-1.5">JPG, PNG, atau WEBP. Maks 10MB.</p>
                 </div>
