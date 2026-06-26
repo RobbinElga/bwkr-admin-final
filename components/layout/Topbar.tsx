@@ -12,7 +12,7 @@ function timeLabel(iso: string) {
     return new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-export function Topbar() {
+export function Topbar({ onMenu }: { onMenu: () => void }) {
     const { user } = useAdminAuth();
     const { items, unreadCount, markRead, markAllRead } = useNotifications();
     const [open, setOpen] = useState(false);
@@ -34,8 +34,18 @@ export function Topbar() {
     }
 
     return (
-        <header className="fixed top-0 right-0 w-[calc(100%-260px)] h-16 z-40 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-6 shadow-sm">
-            <span className="font-semibold text-primary text-base">BWKR Platform</span>
+        <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-260px)] h-16 z-40 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 sm:px-6 shadow-sm">
+            <div className="flex items-center gap-2">
+                <button onClick={onMenu} className="lg:hidden -ml-2 p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" aria-label="Buka menu">
+                    <Icon name="menu" className="text-[24px]" />
+                </button>
+                <span className="font-semibold text-primary text-base">BWKR Platform</span>
+            </div><div className="flex items-center gap-2">
+                <button onClick={onMenu} className="lg:hidden -ml-2 p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" aria-label="Buka menu">
+                    <Icon name="menu" className="text-[24px]" />
+                </button>
+                <span className="font-semibold text-primary text-base">BWKR Platform</span>
+            </div>
 
             <div className="flex items-center gap-3">
                 {/* Lonceng notifikasi */}
