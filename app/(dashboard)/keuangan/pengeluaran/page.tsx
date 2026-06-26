@@ -11,6 +11,7 @@ import { Icon } from "@/components/ui/Icon";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ExpenseFormModal } from "@/components/expense/ExpenseFormModal";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { ExpenseDetailModal } from "@/components/expense/ExpenseDetailModal";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -36,6 +37,7 @@ export default function PengeluaranPage() {
     const isSuper = user?.role === "super_admin";
     const [deleting, setDeleting] = useState<Expense | null>(null);
     const [delLoading, setDelLoading] = useState(false);
+    const [detail, setDetail] = useState<Expense | null>(null);
 
     async function load() {
         setState("loading");
@@ -199,6 +201,10 @@ export default function PengeluaranPage() {
                                             <td className="px-5 py-4 text-on-surface-variant whitespace-nowrap">{formatDate(e.created_at)}</td>
                                             <td className="px-5 py-4">
                                                 <div className="flex justify-center items-center gap-1">
+                                                    <button onClick={() => setDetail(e)} title="Detail"
+                                                        className="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors">
+                                                        <Icon name="visibility" className="text-[18px]" />
+                                                    </button>
                                                     {e.status === "pending" ? (
                                                         canApprove ? (
                                                             <>
@@ -230,6 +236,7 @@ export default function PengeluaranPage() {
                 </div>
             )}
 
+            <ExpenseDetailModal open={!!detail} expense={detail} onClose={() => setDetail(null)} />
             <ExpenseFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); load(); }} />
             <ConfirmDialog
                 open={!!deleting}

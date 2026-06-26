@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { ClaimFormModal } from "@/components/claim/ClaimFormModal";
 import { PendingClaims } from "@/components/claim/PendingClaims";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { DonationDetailModal } from "@/components/donation/DonationDetailModal";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -27,6 +28,7 @@ export default function ClaimDonasiPage() {
     const [page, setPage] = useState(1);
     const [active, setActive] = useState<DonationInput | null>(null);
     const [tab, setTab] = useState<"siap" | "pending">("siap");
+    const [detail, setDetail] = useState<DonationInput | null>(null);
 
     async function load() {
         setState("loading");
@@ -122,14 +124,15 @@ export default function ClaimDonasiPage() {
                                     </thead>
                                     <tbody className="divide-y divide-outline-variant/60">
                                         {rows.map((d) => (
-                                            <tr key={d.id} className="hover:bg-surface-container-low transition-colors">
+                                            <tr key={d.id} onClick={() => setDetail(d)}
+                                                className="hover:bg-surface-container-low transition-colors cursor-pointer">
                                                 <td className="px-5 py-3 font-mono text-primary whitespace-nowrap">{d.ref_no}</td>
                                                 <td className="px-5 py-3 font-medium text-on-surface">{d.donor_name}</td>
                                                 <td className="px-5 py-3 text-on-surface-variant">{projectName(d.project_id) ?? <span className="italic opacity-70">Wakaf Umum</span>}</td>
                                                 <td className="px-5 py-3 text-right font-mono text-on-surface whitespace-nowrap">{formatRupiah(d.amount)}</td>
                                                 <td className="px-5 py-3 text-on-surface-variant whitespace-nowrap">{formatDate(d.created_at)}</td>
                                                 <td className="px-5 py-3 text-center">
-                                                    <button onClick={() => setActive(d)}
+                                                    <button onClick={(e) => { e.stopPropagation(); setActive(d); }}
                                                         className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-primary-container transition-colors">
                                                         <Icon name="task" className="text-[18px]" /> Klaim
                                                     </button>
@@ -157,6 +160,8 @@ export default function ClaimDonasiPage() {
                     )}
                 </>
             )}
+
+            <DonationDetailModal open={!!detail} donation={detail} onClose={() => setDetail(null)} />
             <ClaimFormModal
                 open={!!active}
                 donation={active}

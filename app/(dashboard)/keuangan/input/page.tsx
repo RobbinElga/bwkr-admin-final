@@ -7,11 +7,12 @@ import { useAdminAuth } from "@/stores/auth";
 import { friendlyError } from "@/lib/errors";
 import { formatRupiah, formatDate } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
-import { DonationInputFormModal } from "@/components/donation/DonationInputFormModal";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { getDonationInputs, deleteDonation } from "@/services/donation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getDonationProof } from "@/services/claim";
+import { DonationInputFormModal } from "@/components/donation/DonationInputFormModal";
+import { DonationDetailModal } from "@/components/donation/DonationDetailModal";
 
 type ViewState = "loading" | "ready" | "error";
 
@@ -39,6 +40,7 @@ export default function InputDonasiPage() {
     const [source, setSource] = useState<DonationSource | "">("");
     const [page, setPage] = useState(1);
     const [formOpen, setFormOpen] = useState(false);
+    const [detail, setDetail] = useState<DonationInput | null>(null);
 
     async function load() {
         setState("loading");
@@ -160,7 +162,8 @@ export default function InputDonasiPage() {
                                 {rows.map((d) => {
                                     const st = STATUS[d.status] ?? STATUS.pending;
                                     return (
-                                        <tr key={d.id} className="hover:bg-surface-container-low transition-colors">
+                                        <tr key={d.id} onClick={() => setDetail(d)}
+                                            className="hover:bg-surface-container-low transition-colors cursor-pointer">
                                             <td className="px-5 py-3 font-mono text-primary whitespace-nowrap">{d.ref_no}</td>
                                             <td className="px-5 py-3 font-medium text-on-surface">{d.donor_name}</td>
                                             <td className="px-5 py-3 text-right font-mono text-on-surface whitespace-nowrap">{formatRupiah(d.amount)}</td>
@@ -172,7 +175,7 @@ export default function InputDonasiPage() {
                                             <td className="px-5 py-3 text-right text-on-surface-variant whitespace-nowrap">{formatDate(d.created_at)}</td>
                                             <td className="px-5 py-3 text-center">
                                                 {d.has_proof ? (
-                                                    <button onClick={() => viewProof(d.id)} title="Lihat bukti transfer"
+                                                    <button onClick={(e) => { e.stopPropagation(); viewProof(d.id) }} title="Lihat bukti transfer"
                                                         className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors">
                                                         <Icon name="description" className="text-[20px]" />
                                                     </button>
@@ -182,7 +185,7 @@ export default function InputDonasiPage() {
                                             </td>
                                             {isSuper && (
                                                 <td className="px-5 py-3 text-center">
-                                                    <button onClick={() => setDeleting(d)} title="Hapus"
+                                                    <button onClick={(e) => { e.stopPropagation(); setDeleting(d) }} title="Hapus"
                                                         className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors">
                                                         <Icon name="delete" className="text-[18px]" />
                                                     </button>
@@ -210,6 +213,8 @@ export default function InputDonasiPage() {
                     )}
                 </div>
             )}
+
+            <DonationDetailModal open={!!detail} donation={detail} onClose={() => setDetail(null)} />
             <DonationInputFormModal
                 open={formOpen}
                 onClose={() => setFormOpen(false)}

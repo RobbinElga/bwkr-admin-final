@@ -150,3 +150,14 @@ export async function forceDeleteExpense(id: number): Promise<void> {
     catch { throw new Error("NETWORK"); }
     if (!res.ok) throw new Error(toErrorCode(res.status));
 }
+
+export async function getExpenseFileUrl(id: number, type: "receipt" | "ttd" | "materai"): Promise<string> {
+    let res: Response;
+    try {
+        res = await fetch(`${API}/admin/expenses/${id}/file-url/${type}`, {
+            headers: { Accept: "application/json", ...authHeaders() },
+        });
+    } catch { throw new Error("NETWORK"); }
+    if (!res.ok) throw new Error(toErrorCode(res.status));
+    return (await res.json()).url as string;
+}

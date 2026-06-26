@@ -99,7 +99,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             )}>
                 {/* Brand */}
                 <div className="px-6 py-5 border-b border-white/10">
-                    <h1 className="text-lg font-bold text-white">BWKR Admin V2</h1>
+                    <h1 className="text-lg font-bold text-white">BWKR Admin</h1>
                     <p className="text-xs text-[var(--color-sidebar-text)] opacity-70 mt-0.5">Wakaf Stewardship</p>
                 </div>
 
