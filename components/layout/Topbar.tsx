@@ -40,13 +40,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
                     <Icon name="menu" className="text-[24px]" />
                 </button>
                 <span className="font-semibold text-primary text-base">BWKR Platform</span>
-            </div><div className="flex items-center gap-2">
-                <button onClick={onMenu} className="lg:hidden -ml-2 p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" aria-label="Buka menu">
-                    <Icon name="menu" className="text-[24px]" />
-                </button>
-                <span className="font-semibold text-primary text-base">BWKR Platform</span>
             </div>
-
             <div className="flex items-center gap-3">
                 {/* Lonceng notifikasi */}
                 <div className="relative" ref={ref}>
