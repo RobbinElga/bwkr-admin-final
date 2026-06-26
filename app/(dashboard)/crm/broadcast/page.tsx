@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useAdminAuth } from "@/stores/auth";
 import { WhatsappSettingsCard } from "@/components/crm/WhatsappSettingsCard";
 
-const VARIABLES = ["[Nama]", "[Nominal]", "[Project]"];
+const VARIABLES = ["[Sapaan]", "[Nama]", "[Nominal]", "[Project]"];
 
 const TARGETS: { value: DonorTier | ""; label: string; desc: string }[] = [
     { value: "", label: "Semua Donatur", desc: "Kirim ke seluruh database donatur." },
@@ -67,6 +67,7 @@ export default function BroadcastPage() {
 
     const preview = useMemo(
         () => message
+            .replace(/\[Sapaan\]/g, "Pak")
             .replace(/\[Nama\]/g, "Budi Santoso")
             .replace(/\[Nominal\]/g, "Rp1.500.000")
             .replace(/\[Project\]/g, "Wakaf Sumur Bor"),
@@ -201,7 +202,7 @@ export default function BroadcastPage() {
                                 </div>
                             </div>
                             <textarea ref={textareaRef} value={message} onChange={(e) => setMessage(e.target.value)} rows={10}
-                                placeholder="Ketik pesan... gunakan [Nama], [Nominal], [Project] untuk personalisasi."
+                                placeholder="Ketik pesan... gunakan [Sapaan], [Nama], [Nominal], [Project] untuk personalisasi."
                                 className="w-full rounded-lg border border-outline-variant bg-surface px-4 py-3 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors resize-y leading-relaxed" />
                             <div className="flex justify-between mt-1 text-xs text-on-surface-variant">
                                 <span>Variabel akan diganti otomatis per donatur.</span>

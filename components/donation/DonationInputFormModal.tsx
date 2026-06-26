@@ -57,6 +57,7 @@ export function DonationInputFormModal({ open, onClose, onSaved }: {
         if (!name.trim()) { setErr("Nama wakif wajib diisi."); return; }
         if (!phone.trim()) { setErr("No HP wakif wajib diisi."); return; }
         if (amount < 1000) { setErr("Nominal minimal Rp 1.000."); return; }
+        if (!proof) { setErr("Bukti transfer wajib diunggah."); return; }
         setLoading(true);
         try {
             const created = await createDonationInput({
@@ -176,7 +177,7 @@ export function DonationInputFormModal({ open, onClose, onSaved }: {
                 </label>
 
                 <div>
-                    <span className="text-sm font-medium text-on-surface">Bukti Transfer <span className="text-on-surface-variant font-normal text-xs">(opsional)</span></span>
+                    <span className="text-sm font-medium text-on-surface">Bukti Transfer <span className="text-error">*</span></span>
                     <div className="mt-1.5">
                         {proof ? (
                             <div className="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface px-4 py-3">
